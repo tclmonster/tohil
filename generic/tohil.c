@@ -27,6 +27,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "vfsloader.h"
+
 #define STREQU(a, b) (*(a) == *(b) && strcmp((a), (b)) == 0)
 
 // name we use for keeping track of python interpreter from tcl
@@ -4666,6 +4668,9 @@ Tohil_Init(Tcl_Interp *interp)
         return tohil_tcl_return(interp, prior, TCL_ERROR);
     }
     Py_DECREF(pCap);
+
+    // Allow Python to import modules from a Tcl VFS
+    register_vfs_importer();
 
     // import tohil module
     PyObject *pTohilModStr = PyUnicode_FromString("tohil");
