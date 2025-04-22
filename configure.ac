@@ -165,7 +165,7 @@ AC_SUBST(PYTHON_VERSION)
 # and PKG_TCL_SOURCES.
 #-----------------------------------------------------------------------
 
-TEA_ADD_SOURCES([tohil.c])
+TEA_ADD_SOURCES([tohil.c vfsloader.c])
 TEA_ADD_HEADERS([])
 TEA_ADD_INCLUDES([])
 TEA_ADD_LIBS([])
