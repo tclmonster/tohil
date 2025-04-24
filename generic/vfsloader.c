@@ -141,18 +141,47 @@ static PyTypeObject VFSFinderType = {
     },
 };
 
+static PyObject *SourceLoaderType = NULL;
+
+// TODO:
+// - Load the importlib.abc.SourceLoader to use as a base class
+// - Implement methods:
+//     (a) path_mtime(self, path): return modification time as int.
+//     (b) get_data(self, path): return data from path as raw bytes.
 // === Register with sys.meta_path ===
-void register_vfs_importer() {
-    if (PyType_Ready(&VFSFinderType) < 0) return;
-    if (PyType_Ready(&VFSLoaderType) < 0) return;
+int
+register_vfs_importer()
+{
+    PyObject * importlib_abc = PyImport_ImportModule("importlib.abc");
+    if (importlib_abc == NULL)
+	return -1;
+
+    SourceLoaderType = PyObject_GetAttrString(importlib_abc, "SourceLoader");
+    Py_DECREF(importlib_abc);
+
+    if (SourceLoaderType == NULL)
+	return -1;
+
+    if (! PyType_Check(SourceLoaderType)) {
+	PyErr_SetString(PyExc_TypeError, "SourceLoader is not a type object");
+	Py_DECREF(SourceLoaderType);
+	SourceLoaderType = NULL;
+	return -1;
+    }
+
+    VFSLoaderType.tp_base = (PyTypeObject *) SourceLoaderType;
+    Py_INCREF(SourceLoaderType); /* PyType_Ready will steal this reference */
+
+    if (PyType_Ready(&VFSFinderType) < 0) return -1;
+    if (PyType_Ready(&VFSLoaderType) < 0) return -1;
 
     PyObject *finder = PyObject_CallObject((PyObject *)&VFSFinderType, NULL);
-    if (!finder) return;
+    if (!finder) return -1;
 
     PyObject *sys = PyImport_ImportModule("sys");
     PyObject *meta_path = PyObject_GetAttrString(sys, "meta_path");
 
-    PyList_Insert(meta_path, 0, finder);  // insert at front
+    PyList_Insert(meta_path, 0, finder);  /* insert at front */
 
     Py_DECREF(meta_path);
     Py_DECREF(sys);
